@@ -32,6 +32,8 @@ gcloud compute firewall-rules create k8s-allow-internal \
   --source-ranges 10.240.0.0/24
 ```
 
+Allow vm to access internet: <https://cloud.google.com/solutions/building-internet-connectivity-for-private-vms>
+
 Create bastion host, add network tag and allow ssh from ssh to bastion host.
 
 Create etcd host in k8s-network
@@ -39,3 +41,4 @@ Create etcd host in k8s-network
 ## References
 
 - <https://docs.projectcalico.org/getting-started/kubernetes/self-managed-public-cloud/gce>
+- <https://cloud.google.com/solutions/building-internet-connectivity-for-private-vms>
