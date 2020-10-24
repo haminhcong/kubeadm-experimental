@@ -1,5 +1,5 @@
 - name: add yum-utils
-  sudo: yes
+  become: yes
   yum:
     name: yum-utils
 - name: Add Docker repo
