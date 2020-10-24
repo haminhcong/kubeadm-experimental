@@ -9,17 +9,13 @@ Experimental to deploy k8s cluster on Google Cloud with kubeadm and calico
 
 ## Cluster Component
 
-
 ![cluster-component](./images/cluster-component.png)
 
 ## Steps to setup
 
-
-## Create Resources
-
+### Create Resources
 
 Create VPC Network
-
 
 ```bash
 gcloud compute networks create k8s-net --subnet-mode custom
@@ -39,7 +35,8 @@ Create bastion host `10.240.0.2`, add network tag and allow ssh from ssh to bast
 ### Setup bastion host
 
 - Install ansible
-
+- Install git
+- Clone this repo to bastion host
 
 ### Setup etcd
 
