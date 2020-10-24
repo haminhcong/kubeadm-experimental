@@ -1,0 +1,7 @@
+---
+- name: Deploy netbox webapp
+  hosts: k8s_nodes
+  gather_facts: false
+  roles:
+    - { role: docker,
+        tags: install_docker }
