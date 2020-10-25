@@ -24,6 +24,6 @@
     disable_excludes: kubernetes
   become: yes
 - name: Ensure kubelet service is enabled
-  systemd:
+  service:
     name: kubelet
     enabled: yes
