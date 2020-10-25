@@ -133,11 +133,11 @@ with root user on them:
 mkdir -p /etc/etcd/pki/
 cp /home/centos/ca* /etc/etcd/pki/
 
-
 wget https://github.com/kubernetes-sigs/etcdadm/releases/download/v0.1.3/etcdadm-linux-amd64
 mv etcdadm-linux-amd64 /usr/local/sbin/etcdadm
 chmod +x  /usr/local/sbin/etcdadm
 
+ETCDCTL_API=3 etcdadm join --version 3.4.13 https://10.240.0.7:2379
 ```
 
 ### Setup K8S Masters
