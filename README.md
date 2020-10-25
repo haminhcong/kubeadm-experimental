@@ -10,6 +10,8 @@ Experimental to deploy k8s cluster on Google Cloud with etcdadm, kubeadm and cal
 
 - Google Cloud Account
 - Configured Google Cloud SDK cli
+- Google Cloud Account SSH Key for Project Wide Scope with user `centos`:
+  <https://cloud.google.com/compute/docs/instances/adding-removing-ssh-keys#project-wide>
 
 ## Cluster Component
 
@@ -100,15 +102,43 @@ gcloud compute instances create k8s-etcd-3 \
 
 ```
 
+Ensure presequite is met by run playbook:
+
+```bash
+ansible-playbook -i inventory.ini site.yml -e ansible_ssh_user=centos --key-file "/PATH_TO_GOOGLE_CLOUD_VM_KEY" --tags "ensure_presequite"
+```
+
 Init etcd cluster in `k8s-etcd-1` by run following commands
 
-```log
+```bash
+# Run following command with root user
 wget https://github.com/kubernetes-sigs/etcdadm/releases/download/v0.1.3/etcdadm-linux-amd64
 mv etcdadm-linux-amd64 /usr/local/sbin/etcdadm
+chmod +x  /usr/local/sbin/etcdadm
 ETCDCTL_API=3 etcdadm init --version 3.4.13
 ```
 
+Copy etcd certs from `k8s-etcd-1` to `k8s-etcd-2` and `k8s-etcd-3`:
+
+```bash
+scp -i /PATH_TO_SSH_KEY /etc/etcd/pki/ca.* centos@10.240.0.8:/home/centos
+scp -i /PATH_TO_SSH_KEY /etc/etcd/pki/ca.* centos@10.240.0.9:/home/centos
+```
+
 Join `k8s-etcd-2` and `k8s-etcd-3` to etcd cluster by run following commands
+with root user on them:
+
+```bash
+
+mkdir -p /etc/etcd/pki/
+cp /home/centos/ca* /etc/etcd/pki/
+
+
+wget https://github.com/kubernetes-sigs/etcdadm/releases/download/v0.1.3/etcdadm-linux-amd64
+mv etcdadm-linux-amd64 /usr/local/sbin/etcdadm
+chmod +x  /usr/local/sbin/etcdadm
+
+```
 
 ### Setup K8S Masters
 
@@ -162,7 +192,7 @@ gcloud compute instances create k8s-controller-3 \
 Setup docker on 3 K8S Master VMs
 
 ```bash
-ansible-playbook -i inventory.ini site.yml --tags "docker" -e ansible_ssh_user=centos --key-file "/PATH_TO_GOOGLE_CLOUD_VM_KEY" --tags "install_docker"
+ansible-playbook -i inventory.ini site.yml -e ansible_ssh_user=centos --key-file "/PATH_TO_GOOGLE_CLOUD_VM_KEY" --tags "install_docker"
 ```
 
 ### Setup K8S API LB
@@ -260,6 +290,7 @@ gcloud compute forwarding-rules create fr-ilb-k8s-api \
 
 ## References
 
+- <https://cloud.google.com/compute/docs/instances/adding-removing-ssh-keys#project-wide>
 - <https://docs.projectcalico.org/getting-started/kubernetes/self-managed-public-cloud/gce>
 - <https://cloud.google.com/solutions/building-internet-connectivity-for-private-vms>
 - <https://cloud.google.com/load-balancing/docs/internal/setting-up-internal>
