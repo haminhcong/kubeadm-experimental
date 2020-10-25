@@ -1,6 +1,6 @@
 # kubeadm-gcp-experimental
 
-Experimental to deploy k8s cluster on Google Cloud with kubeadm and calico
+Experimental to deploy k8s cluster on Google Cloud with etcdadm, kubeadm and calico
 
 ## Cluster Configuration
 
@@ -14,6 +14,14 @@ Experimental to deploy k8s cluster on Google Cloud with kubeadm and calico
 ## Cluster Component
 
 ![cluster-component](./images/cluster-component.png)
+
+## IP Address Planning
+
+- Cluster Network: VPC `10.240.0.0/24`
+- Internal K8S API LB: `10.240.0.6`
+- Etcd cluster: `10.240.0.7`, `10.240.0.8`, `10.240.0.9`
+- K8S Masters: `10.240.0.11`, `10.240.0.12`, `10.240.0.13`
+- K8S Workers: `10.240.0.21`, `10.240.0.22`, `10.240.0.23`
 
 ## Steps to setup
 
@@ -254,3 +262,4 @@ gcloud compute forwarding-rules create fr-ilb-k8s-api \
 - <https://docs.projectcalico.org/getting-started/kubernetes/self-managed-public-cloud/gce>
 - <https://cloud.google.com/solutions/building-internet-connectivity-for-private-vms>
 - <https://cloud.google.com/load-balancing/docs/internal/setting-up-internal>
+- <https://github.com/kubernetes-sigs/etcdadm>
