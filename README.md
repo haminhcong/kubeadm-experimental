@@ -43,15 +43,63 @@ Create bastion host `10.240.0.2`, add network tag and allow ssh from ssh to bast
 - Install git
 - Clone this repo to bastion host
 
-### Setup etcd
+### Setup etcd cluster
 
-Create etcd-1 VM in k8s-network with 20 GB SSD, 2 CPU 4 GB RAM, IP `10.240.0.3`
+Create `k8s-etcd-1, k8s-etcd-2, k8s-etcd-3` VMs in k8s-network with 20 GB SSD, 2 CPU 4 GB RAM, IP `10.240.0.7, 10.240.0.8, 10.240.0.9`
+
+```bash
+gcloud compute instances create k8s-etcd-1 \
+    --async \
+    --boot-disk-size 20GB \
+    --boot-disk-type pd-ssd \
+    --image-family centos-7 \
+    --image-project centos-cloud \
+    --machine-type e2-medium \
+    --no-address \
+    --private-network-ip 10.240.0.7 \
+    --scopes compute-rw,storage-ro,service-management,service-control,logging-write,monitoring \
+    --subnet k8s-subnet \
+    --zone asia-southeast1-b \
+    --tags k8s-cluster,etcd
+
+gcloud compute instances create k8s-etcd-2 \
+    --async \
+    --boot-disk-size 20GB \
+    --boot-disk-type pd-ssd \
+    --image-family centos-7 \
+    --image-project centos-cloud \
+    --machine-type e2-medium \
+    --no-address \
+    --private-network-ip 10.240.0.8 \
+    --scopes compute-rw,storage-ro,service-management,service-control,logging-write,monitoring \
+    --subnet k8s-subnet \
+    --zone asia-southeast1-b \
+    --tags k8s-cluster,etcd
+gcloud compute instances create k8s-etcd-3 \
+    --async \
+    --boot-disk-size 20GB \
+    --boot-disk-type pd-ssd \
+    --image-family centos-7 \
+    --image-project centos-cloud \
+    --machine-type e2-medium \
+    --no-address \
+    --private-network-ip 10.240.0.9 \
+    --scopes compute-rw,storage-ro,service-management,service-control,logging-write,monitoring \
+    --subnet k8s-subnet \
+    --zone asia-southeast1-b \
+    --tags k8s-cluster,etcd
+
+```
+
+Init etcd cluster in `k8s-etcd-1` by run following commands
 
 ```log
 wget https://github.com/kubernetes-sigs/etcdadm/releases/download/v0.1.3/etcdadm-linux-amd64
 mv etcdadm-linux-amd64 /usr/local/sbin/etcdadm
 ETCDCTL_API=3 etcdadm init --version 3.4.13
 ```
+
+Join `k8s-etcd-2` and `k8s-etcd-3` to etcd cluster by run following commands
 
 ### Setup K8S Masters
 

@@ -1,4 +1,10 @@
 ---
+- name: Ensure presequite requirement is met
+  hosts: cluster_nodes
+  gather_facts: false
+  roles:
+    - { role: common,
+        tags: ensure_presequite }
 - name: Ensure docker is installed in k8s nodes
   hosts: k8s_nodes
   gather_facts: false
