@@ -17,5 +17,5 @@
   hosts: k8s_nodes
   gather_facts: false
   roles:
-    - { role: k8s_nodes,
+    - { role: k8s_node,
         tags: ensure_k8s_presequite }
