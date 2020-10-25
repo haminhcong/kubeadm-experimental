@@ -25,5 +25,5 @@
   become: yes
 - name: Ensure kubelet service is enabled
   systemd:
-    name: kubectl
+    name: kubelet
     enabled: yes
