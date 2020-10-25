@@ -19,6 +19,7 @@ Experimental to deploy k8s cluster on Google Cloud with etcdadm, kubeadm and cal
 
 - Cluster Network: VPC `10.240.0.0/24`
 - Internal K8S API LB: `10.240.0.6`
+- Bastion: `10.240.0.2` + 1 Public IP
 - Etcd cluster: `10.240.0.7`, `10.240.0.8`, `10.240.0.9`
 - K8S Masters: `10.240.0.11`, `10.240.0.12`, `10.240.0.13`
 - K8S Workers: `10.240.0.21`, `10.240.0.22`, `10.240.0.23`
