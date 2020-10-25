@@ -25,6 +25,8 @@ Experimental to deploy k8s cluster on Google Cloud with etcdadm, kubeadm and cal
 - Etcd cluster: `10.240.0.7`, `10.240.0.8`, `10.240.0.9`
 - K8S Masters: `10.240.0.11`, `10.240.0.12`, `10.240.0.13`
 - K8S Workers: `10.240.0.21`, `10.240.0.22`, `10.240.0.23`
+- K8S serviceSubnet: 192.168.128.0/17
+- K8S podSubnet: 192.168.0.0/17
 
 ## Steps to setup
 
@@ -167,7 +169,7 @@ gcloud compute health-checks create tcp hc-tcp-6443 \
     --port=6443
 ```
 
-Create `k8s-master-group` instance group and add three k8s master VMs to this
+Create `k8s-master-group` instance group and add k8s-master-1 to this
 instance group:
 
 ```bash
@@ -175,7 +177,7 @@ gcloud compute instance-groups unmanaged create k8s-master-group \
     --zone=asia-southeast1-b
 gcloud compute instance-groups unmanaged add-instances k8s-master-group \
     --zone=asia-southeast1-b \
-    --instances=k8s-controller-1,k8s-controller-2,k8s-controller-3
+    --instances=k8s-controller-1
 ```
 
 Create backend-service
@@ -279,7 +281,6 @@ gcloud compute instances create k8s-controller-3 \
     --subnet k8s-subnet \
     --zone asia-southeast1-b \
     --tags k8s-cluster,controller
-
 ```
 
 Setup docker and prepare presequite on 3 K8S Master VMs
@@ -291,6 +292,175 @@ ansible-playbook -i inventory.ini site.yml -e ansible_ssh_user=centos --key-file
 
 #### Setup k8s-controller-1
 
+use root user, create`kubeadm-config.yml` file with token is generated from command `kubeadm token generate`
+
+Copy etcd certs from `k8s-etcd-1` to  K8S Master 1:
+
+```bash
+scp -i /PATH_TO_SSH_KEY /etc/etcd/pki/ca.crt centos@10.240.0.11:/home/centos
+scp -i /PATH_TO_SSH_KEY /etc/etcd/pki/apiserver-etcd-client.crt centos@10.240.0.11:/home/centos
+scp -i /PATH_TO_SSH_KEY /etc/etcd/pki/apiserver-etcd-client.key centos@10.240.0.11:/home/centos
+```
+
+Create location for etcd cert keys:
+
+```bash
+mkdir -p  /etc/etcd/pki/
+mv /home/centos/ca.crt /etc/etcd/pki/ca.crt
+mv /home/centos/apiserver-etcd-client.crt /etc/etcd/pki/apiserver-etcd-client.crt
+mv /home/centos/apiserver-etcd-client.key /etc/etcd/pki/apiserver-etcd-client.key
+```
+
+Init k8s master:
+
+```bash
+kubeadm init --config kubeadm-config.yml
+```
+
+```setup kubectl conffig
+mkdir -p $HOME/.kube
+  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+  sudo chown $(id -u):$(id -g) $HOME/.kube/config
+```
+
+Create `calico.yml` manifest file for calico CNI
+
+Apply calico CNI:
+
+```sh
+kubectl apply -f calico.yml
+```
+
+Copy k8s master certificates to `k8s-controller-2` and `k8s-controller-3`:
+
+```bash
+scp  -i /PATH_TO_GOOGLE_CLOUD_VM_KEY /etc/kubernetes/pki/ca.crt centos@10.240.0.12:/home/centos
+scp  -i /PATH_TO_GOOGLE_CLOUD_VM_KEY /etc/kubernetes/pki/ca.key centos@10.240.0.12:/home/centos
+scp  -i /PATH_TO_GOOGLE_CLOUD_VM_KEY /etc/kubernetes/pki/sa.key centos@10.240.0.12:/home/centos
+scp  -i /PATH_TO_GOOGLE_CLOUD_VM_KEY /etc/kubernetes/pki/sa.pub centos@10.240.0.12:/home/centos
+scp  -i /PATH_TO_GOOGLE_CLOUD_VM_KEY /etc/kubernetes/pki/front-proxy-ca.crt centos@10.240.0.12:/home/centos
+scp  -i /PATH_TO_GOOGLE_CLOUD_VM_KEY /etc/kubernetes/pki/front-proxy-ca.key centos@10.240.0.12:/home/centos
+
+scp  -i /PATH_TO_GOOGLE_CLOUD_VM_KEY /etc/kubernetes/pki/ca.crt centos@10.240.0.13:/home/centos
+scp  -i /PATH_TO_GOOGLE_CLOUD_VM_KEY /etc/kubernetes/pki/ca.key centos@10.240.0.13:/home/centos
+scp  -i /PATH_TO_GOOGLE_CLOUD_VM_KEY /etc/kubernetes/pki/sa.key centos@10.240.0.13:/home/centos
+scp  -i /PATH_TO_GOOGLE_CLOUD_VM_KEY /etc/kubernetes/pki/sa.pub centos@10.240.0.13:/home/centos
+scp  -i /PATH_TO_GOOGLE_CLOUD_VM_KEY /etc/kubernetes/pki/front-proxy-ca.crt centos@10.240.0.13:/home/centos
+scp  -i /PATH_TO_GOOGLE_CLOUD_VM_KEY /etc/kubernetes/pki/front-proxy-ca.key centos@10.240.0.13:/home/centos
+
+```
+
+#### Setup k8s-controller-2 and k8s-controller-3
+
+```bash
+
+USER=centos # customizable
+mkdir -p /etc/kubernetes/pki/etcd
+mv /home/${USER}/ca.crt /etc/kubernetes/pki/
+mv /home/${USER}/ca.key /etc/kubernetes/pki/
+mv /home/${USER}/sa.pub /etc/kubernetes/pki/
+mv /home/${USER}/sa.key /etc/kubernetes/pki/
+mv /home/${USER}/front-proxy-ca.crt /etc/kubernetes/pki/
+mv /home/${USER}/front-proxy-ca.key /etc/kubernetes/pki/
+```
+
+copy cert from etcd and move certificates to correct location:
+
+```bash
+scp -i /PATH_TO_SSH_KEY /etc/etcd/pki/ca.crt centos@10.240.0.12:/home/centos
+scp -i /PATH_TO_SSH_KEY /etc/etcd/pki/apiserver-etcd-client.crt centos@10.240.0.12:/home/centos
+scp -i /PATH_TO_SSH_KEY /etc/etcd/pki/apiserver-etcd-client.key centos@10.240.0.12:/home/centos
+```
+
+```bash
+scp -i /PATH_TO_SSH_KEY /etc/etcd/pki/ca.crt centos@10.240.0.13:/home/centos
+scp -i /PATH_TO_SSH_KEY /etc/etcd/pki/apiserver-etcd-client.crt centos@10.240.0.13:/home/centos
+scp -i /PATH_TO_SSH_KEY /etc/etcd/pki/apiserver-etcd-client.key centos@10.240.0.13:/home/centos
+```
+
+```bash
+mkdir -p  /etc/etcd/pki/
+mv /home/centos/ca.crt /etc/etcd/pki/ca.crt
+mv /home/centos/apiserver-etcd-client.crt /etc/etcd/pki/apiserver-etcd-client.crt
+mv /home/centos/apiserver-etcd-client.key /etc/etcd/pki/apiserver-etcd-client.key
+```
+
+Perform join k8s control plane:
+
+```log
+kubeadm join 10.240.0.6:6443 --token KUBE_CLUSTER_TOKEN --discovery-token-ca-cert-hash sha256:KUBE_CLUSTER_CA_CERT_HASH --control-plane
+```
+
+After join successful, add k8s-master-2 and k8s-master-3 to master
+instance group:
+
+```bash
+gcloud compute instance-groups unmanaged add-instances k8s-master-group \
+    --zone=asia-southeast1-b \
+    --instances=k8s-controller-2,k8s-controller-3
+```
+
+### Setup K8S Workers
+
+Create three K8S Master VMs: `10.240.0.21, 10.240.0.22, 10.240.0.23`
+
+```bash
+gcloud compute instances create k8s-worker-1 \
+    --async \
+    --boot-disk-size 40GB \
+    --can-ip-forward \
+    --image-family centos-7 \
+    --image-project centos-cloud \
+    --machine-type e2-medium \
+    --no-address \
+    --private-network-ip 10.240.0.21 \
+    --scopes compute-rw,storage-ro,service-management,service-control,logging-write,monitoring \
+    --subnet k8s-subnet \
+    --zone asia-southeast1-b \
+    --tags k8s-cluster,worker
+
+gcloud compute instances create k8s-worker-2 \
+    --async \
+    --boot-disk-size 40GB \
+    --can-ip-forward \
+    --image-family centos-7 \
+    --image-project centos-cloud \
+    --machine-type e2-medium \
+    --private-network-ip 10.240.0.22 \
+    --no-address \
+    --scopes compute-rw,storage-ro,service-management,service-control,logging-write,monitoring \
+    --subnet k8s-subnet \
+    --zone asia-southeast1-b \
+    --tags k8s-cluster,worker
+
+gcloud compute instances create k8s-worker-3 \
+    --async \
+    --boot-disk-size 40GB \
+    --can-ip-forward \
+    --image-family centos-7 \
+    --image-project centos-cloud \
+    --machine-type e2-medium \
+    --private-network-ip 10.240.0.23 \
+    --no-address \
+    --scopes compute-rw,storage-ro,service-management,service-control,logging-write,monitoring \
+    --subnet k8s-subnet \
+    --zone asia-southeast1-b \
+    --tags k8s-cluster,worker
+```
+
+Setup docker and prepare presequite on 3 K8S Master VMs
+
+```bash
+ansible-playbook -i inventory.ini site.yml -e ansible_ssh_user=centos --key-file "/PATH_TO_GOOGLE_CLOUD_VM_KEY" --tags "install_docker"
+ansible-playbook -i inventory.ini site.yml -e ansible_ssh_user=centos --key-file "/PATH_TO_GOOGLE_CLOUD_VM_KEY" --tags "ensure_k8s_presequite"
+```
+
+Perform join k8s worker:
+
+```log
+kubeadm join 10.240.0.6:6443 --token KUBE_CLUSTER_TOKEN --discovery-token-ca-cert-hash sha256:KUBE_CLUSTER_CA_CERT_HASH
+```
+
 ## References
 
 - <https://cloud.google.com/compute/docs/instances/adding-removing-ssh-keys#project-wide>
@@ -298,3 +468,7 @@ ansible-playbook -i inventory.ini site.yml -e ansible_ssh_user=centos --key-file
 - <https://cloud.google.com/solutions/building-internet-connectivity-for-private-vms>
 - <https://cloud.google.com/load-balancing/docs/internal/setting-up-internal>
 - <https://github.com/kubernetes-sigs/etcdadm>
+- <https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/>
+- <https://medium.com/faun/kubernetes-spin-up-highly-available-kubernetes-cluster-using-kubeadm-setup-cni-part-3-6af4f53aa735>
+- <https://unofficial-kubernetes.readthedocs.io/en/latest/admin/kubeadm/>
+- <https://www.devops.buzz/public/kubeadm/change-servicesubnet-cidr>
