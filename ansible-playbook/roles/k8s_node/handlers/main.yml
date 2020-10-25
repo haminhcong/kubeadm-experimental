@@ -4,3 +4,4 @@
     name: docker
     state: restarted
     daemon_reload: yes
+  become: yes
