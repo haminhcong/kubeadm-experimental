@@ -140,61 +140,6 @@ chmod +x  /usr/local/sbin/etcdadm
 ETCDCTL_API=3 etcdadm join --version 3.4.13 https://10.240.0.7:2379
 ```
 
-### Setup K8S Masters
-
-Create three K8S Master VMs: `10.240.0.11, 10.240.0.12, 10.240.0.13`
-
-```bash
-gcloud compute instances create k8s-controller-1 \
-    --async \
-    --boot-disk-size 40GB \
-    --can-ip-forward \
-    --image-family centos-7 \
-    --image-project centos-cloud \
-    --machine-type e2-medium \
-    --no-address \
-    --private-network-ip 10.240.0.11 \
-    --scopes compute-rw,storage-ro,service-management,service-control,logging-write,monitoring \
-    --subnet k8s-subnet \
-    --zone asia-southeast1-b \
-    --tags k8s-cluster,controller
-
-gcloud compute instances create k8s-controller-2 \
-    --async \
-    --boot-disk-size 40GB \
-    --can-ip-forward \
-    --image-family centos-7 \
-    --image-project centos-cloud \
-    --machine-type e2-medium \
-    --private-network-ip 10.240.0.12 \
-    --no-address \
-    --scopes compute-rw,storage-ro,service-management,service-control,logging-write,monitoring \
-    --subnet k8s-subnet \
-    --zone asia-southeast1-b \
-    --tags k8s-cluster,controller
-
-gcloud compute instances create k8s-controller-3 \
-    --async \
-    --boot-disk-size 40GB \
-    --can-ip-forward \
-    --image-family centos-7 \
-    --image-project centos-cloud \
-    --machine-type e2-medium \
-    --private-network-ip 10.240.0.13 \
-    --no-address \
-    --scopes compute-rw,storage-ro,service-management,service-control,logging-write,monitoring \
-    --subnet k8s-subnet \
-    --zone asia-southeast1-b \
-    --tags k8s-cluster,controller
-
-```
-
-Setup docker on 3 K8S Master VMs
-
-```bash
-ansible-playbook -i inventory.ini site.yml -e ansible_ssh_user=centos --key-file "/PATH_TO_GOOGLE_CLOUD_VM_KEY" --tags "install_docker"
-```
-
 ### Setup K8S API LB
 
 Create firewall rule:
@@ -287,6 +232,63 @@ gcloud compute forwarding-rules create fr-ilb-k8s-api \
     --backend-service=be-k8s-master-k8s-api \
     --backend-service-region=asia-southeast1
 ```
+
+### Setup K8S Masters
+
+Create three K8S Master VMs: `10.240.0.11, 10.240.0.12, 10.240.0.13`
+
+```bash
+gcloud compute instances create k8s-controller-1 \
+    --async \
+    --boot-disk-size 40GB \
+    --can-ip-forward \
+    --image-family centos-7 \
+    --image-project centos-cloud \
+    --machine-type e2-medium \
+    --no-address \
+    --private-network-ip 10.240.0.11 \
+    --scopes compute-rw,storage-ro,service-management,service-control,logging-write,monitoring \
+    --subnet k8s-subnet \
+    --zone asia-southeast1-b \
+    --tags k8s-cluster,controller
+
+gcloud compute instances create k8s-controller-2 \
+    --async \
+    --boot-disk-size 40GB \
+    --can-ip-forward \
+    --image-family centos-7 \
+    --image-project centos-cloud \
+    --machine-type e2-medium \
+    --private-network-ip 10.240.0.12 \
+    --no-address \
+    --scopes compute-rw,storage-ro,service-management,service-control,logging-write,monitoring \
+    --subnet k8s-subnet \
+    --zone asia-southeast1-b \
+    --tags k8s-cluster,controller
+
+gcloud compute instances create k8s-controller-3 \
+    --async \
+    --boot-disk-size 40GB \
+    --can-ip-forward \
+    --image-family centos-7 \
+    --image-project centos-cloud \
+    --machine-type e2-medium \
+    --private-network-ip 10.240.0.13 \
+    --no-address \
+    --scopes compute-rw,storage-ro,service-management,service-control,logging-write,monitoring \
+    --subnet k8s-subnet \
+    --zone asia-southeast1-b \
+    --tags k8s-cluster,controller
+
+```
+
+Setup docker on 3 K8S Master VMs
+
+```bash
+ansible-playbook -i inventory.ini site.yml -e ansible_ssh_user=centos --key-file "/PATH_TO_GOOGLE_CLOUD_VM_KEY" --tags "install_docker"
+```
+
+#### Setup k8s-controller-1
 
 ## References
 
