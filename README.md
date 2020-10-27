@@ -340,11 +340,10 @@ gcloud compute instances create k8s-worker-3 \
 Setup docker and prepare presequite on 3 K8S Master VMs
 
 ```bash
-ansible-playbook -i inventory.ini site.yml -e ansible_ssh_user=centos --key-file "/PATH_TO_GOOGLE_CLOUD_VM_KEY" --tags "install_docker"
 ansible-playbook -i inventory.ini site.yml -e ansible_ssh_user=centos --key-file "/PATH_TO_GOOGLE_CLOUD_VM_KEY" --tags "ensure_k8s_presequite"
 ```
 
-Perform join k8s worker:
+Perform join k8s worker in each k8s-worker node by run this command with root user:
 
 ```log
 kubeadm join 10.240.0.6:6443 --token KUBE_CLUSTER_TOKEN --discovery-token-ca-cert-hash sha256:KUBE_CLUSTER_CA_CERT_HASH
