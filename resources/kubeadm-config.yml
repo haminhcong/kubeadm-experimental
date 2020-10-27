@@ -30,9 +30,9 @@ controllerManager: {}
 etcd:
   external:
     endpoints:
-    - https://10.240.0.7:2379
-    - https://10.240.0.8:2379
-    - https://10.240.0.9:2379
+    - https://10.240.0.11:2379
+    - https://10.240.0.12:2379
+    - https://10.240.0.13:2379
     caFile: /etc/etcd/pki/ca.crt
     certFile: /etc/etcd/pki/apiserver-etcd-client.crt
     keyFile: /etc/etcd/pki/apiserver-etcd-client.key
