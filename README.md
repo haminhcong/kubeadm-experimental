@@ -112,16 +112,6 @@ gcloud compute backend-services add-backend be-k8s-master-k8s-api \
 Create forwading rulte to create LB
 
 ```bash
-gcloud compute forwarding-rules create fr-ilb-nginx \
-    --region=asia-southeast1 \
-    --load-balancing-scheme=internal \
-    --network=k8s-net \
-    --subnet=k8s-subnet \
-    --address=10.240.0.6 \
-    --ip-protocol=TCP \
-    --ports=80 \
-    --backend-service=be-k8s-master-nginx \
-    --backend-service-region=asia-southeast1
 gcloud compute forwarding-rules create fr-ilb-k8s-api \
     --region=asia-southeast1 \
     --load-balancing-scheme=internal \
@@ -229,7 +219,6 @@ ETCDCTL_API=3 etcdadm join --version 3.4.13 https://10.240.0.11:2379
 
 use root user, create`kubeadm-config.yml` file with token is generated from command `kubeadm token generate`
 
-
 Create config file `kubeadm-config.yml` on k8s-controller-1
 
 Init k8s master:
@@ -283,27 +272,6 @@ mv /home/${USER}/sa.pub /etc/kubernetes/pki/
 mv /home/${USER}/sa.key /etc/kubernetes/pki/
 mv /home/${USER}/front-proxy-ca.crt /etc/kubernetes/pki/
 mv /home/${USER}/front-proxy-ca.key /etc/kubernetes/pki/
-```
-
-copy cert from etcd and move certificates to correct location:
-
-```bash
-scp -i /PATH_TO_SSH_KEY /etc/etcd/pki/ca.crt centos@10.240.0.12:/home/centos
-scp -i /PATH_TO_SSH_KEY /etc/etcd/pki/apiserver-etcd-client.crt centos@10.240.0.12:/home/centos
-scp -i /PATH_TO_SSH_KEY /etc/etcd/pki/apiserver-etcd-client.key centos@10.240.0.12:/home/centos
-```
-
-```bash
-scp -i /PATH_TO_SSH_KEY /etc/etcd/pki/ca.crt centos@10.240.0.13:/home/centos
-scp -i /PATH_TO_SSH_KEY /etc/etcd/pki/apiserver-etcd-client.crt centos@10.240.0.13:/home/centos
-scp -i /PATH_TO_SSH_KEY /etc/etcd/pki/apiserver-etcd-client.key centos@10.240.0.13:/home/centos
-```
-
-```bash
-mkdir -p  /etc/etcd/pki/
-mv /home/centos/ca.crt /etc/etcd/pki/ca.crt
-mv /home/centos/apiserver-etcd-client.crt /etc/etcd/pki/apiserver-etcd-client.crt
-mv /home/centos/apiserver-etcd-client.key /etc/etcd/pki/apiserver-etcd-client.key
 ```
 
 Perform join k8s control plane:
