@@ -10,6 +10,10 @@
 
 <https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/>
 
+## Introduction about Kubernetes components
+
+- <https://kube.academy/courses/the-kubernetes-machine>
+
 ## References
 
 - <https://docs.oracle.com/en/operating-systems/oracle-linux/kubernetes/E88884.pdf>

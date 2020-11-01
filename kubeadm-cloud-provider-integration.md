@@ -52,6 +52,7 @@ schedulerExtraVolumes:
 Ref:
 
 - <https://medium.com/dev-genius/how-to-kubectl-loadbalancer-and-configure-nginx-ingress-controller-for-a-gcp-cluster-bc2f2599f8f1>
+- <https://rancher.com/docs/rancher/v2.x/en/cluster-provisioning/rke-clusters/cloud-providers/gce/>
 - <https://docs.openshift.com/container-platform/3.10/install_config/configuring_gce.html#gce-configuring-masters-manual_configuring-for-GCE>
 - <https://serverfault.com/questions/943450/gcp-load-balancer-not-created-when-deployment-is-exposed>
 
