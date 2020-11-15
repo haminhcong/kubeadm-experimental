@@ -17,16 +17,20 @@
 - name: Hosts | create list from inventory
   set_fact:
     etc_hosts_inventory_block: |-
-      {% for item in (groups['k8s-cluster'] + groups['etcd'] + groups['calico-rr']|default([]))|unique -%}
-      {% if 'access_ip' in hostvars[item] or 'ip' in hostvars[item] or 'ansible_default_ipv4' in hostvars[item] -%}
-      {{ hostvars[item]['access_ip'] | default(hostvars[item]['ip'] | default(hostvars[item]['ansible_default_ipv4']['address'])) }}
-      {%- if ('ansible_hostname' in hostvars[item] and item != hostvars[item]['ansible_hostname']) %} {{ hostvars[item]['ansible_hostname'] }}.{{ dns_domain }} {{ hostvars[item]['ansible_hostname'] }}{% endif %} {{ item }}.{{ dns_domain }} {{ item }}
+      {% for item in (groups['cluster_nodes'] |default([]))|unique -%}
+      {% if 'ansible_host' in hostvars[item] or 'ip' in hostvars[item] or 'ansible_default_ipv4' in hostvars[item] -%}
+      {{ hostvars[item]['ansible_host'] | default(hostvars[item]['ip'] | default(hostvars[item]['ansible_default_ipv4']['address'])) }}
+      {%- if ('ansible_hostname' in hostvars[item] and item != hostvars[item]['ansible_hostname']) %} {{ hostvars[item]['ansible_hostname'] }}.{{ dns_domain }} {{ hostvars[item]['ansible_hostname'] }}{% endif %} {{ item }}
       {% endif %}
       {% endfor %}
   delegate_to: localhost
   connection: local
   delegate_facts: yes
   run_once: yes
+
+- name: check hostfile content
+  debug:
+    var:  hostvars.localhost.etc_hosts_inventory_block
 
 - name: Hosts | populate inventory into hosts file
   blockinfile:
@@ -37,4 +41,4 @@
     backup: yes
     unsafe_writes: yes
     marker: "# Ansible inventory hosts {mark}"
-  when: populate_inventory_to_hosts_file
+  become: yes
