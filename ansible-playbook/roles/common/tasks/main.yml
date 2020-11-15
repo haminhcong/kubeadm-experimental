@@ -8,3 +8,8 @@
     name: vim
     state: present
   become: yes
+- name: Install telnet
+  yum:
+    name: telnet
+    state: present
+  become: yes
