@@ -3,3 +3,8 @@
     name: wget
     state: present
   become: yes
+- name: Install vim
+  yum:
+    name: vim
+    state: present
+  become: yes
