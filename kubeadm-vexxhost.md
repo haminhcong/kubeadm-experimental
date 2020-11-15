@@ -83,7 +83,7 @@ openstack loadbalancer create --name k8s-api-lb --vip-address 10.240.230.50
 Create Listener
 
 ```bash
-openstack loadbalancer listener create --protocol TCP --protocol-port 2379 --name k8s-etcd-listener  <LB_ID> 
+openstack loadbalancer listener create --protocol TCP --protocol-port 2379 --name k8s-etcd-listener  <LB_ID>
 openstack loadbalancer listener create --protocol TCP --protocol-port 6443 --name k8s-api-listener  <LB_ID>
 
 ```

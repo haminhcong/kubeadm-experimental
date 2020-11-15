@@ -7,14 +7,14 @@
         tags: ensure_k8s_presequite }
 
 - name: Ensure docker is installed in k8s nodes
-  hosts: k8s_nodes
+  hosts: cluster_nodes
   gather_facts: false
   roles:
     - { role: docker,
         tags: ensure_k8s_presequite }
 
 - name: Ensure presequite in k8s nodes
-  hosts: k8s_nodes
+  hosts: cluster_nodes
   gather_facts: false
   roles:
     - { role: k8s_node,
