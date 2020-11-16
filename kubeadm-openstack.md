@@ -427,12 +427,5 @@ Commercial support is available at
 
 ## References
 
-- <https://cloud.google.com/compute/docs/instances/adding-removing-ssh-keys#project-wide>
-- <https://docs.projectcalico.org/getting-started/kubernetes/self-managed-public-cloud/gce>
-- <https://cloud.google.com/solutions/building-internet-connectivity-for-private-vms>
-- <https://cloud.google.com/load-balancing/docs/internal/setting-up-internal>
+- <https://github.com/kubernetes/cloud-provider-openstack/blob/master/docs/openstack-cloud-controller-manager/using-openstack-cloud-controller-manager.md>
 - <https://github.com/kubernetes-sigs/etcdadm>
-- <https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/>
-- <https://medium.com/faun/kubernetes-spin-up-highly-available-kubernetes-cluster-using-kubeadm-setup-cni-part-3-6af4f53aa735>
-- <https://unofficial-kubernetes.readthedocs.io/en/latest/admin/kubeadm/>
-- <https://www.devops.buzz/public/kubeadm/change-servicesubnet-cidr>
