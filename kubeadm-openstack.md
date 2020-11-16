@@ -1,6 +1,7 @@
 # kubeadm-gcp-experimental
 
-Experimental to deploy k8s cluster on VEXXHOST with etcdadm, kubeadm and calico
+Experimental to deploy k8s cluster on OpenStack Cloud Provider - VEXXHOST,
+with etcdadm, kubeadm and calico
 
 ## Presequite
 
@@ -29,6 +30,55 @@ Create bastion host, add network tag and allow ssh from ssh to bastion host.
 - Install ansible
 - Install git
 - Clone this repo to bastion host
+
+### Create K8S Cluster Nodes
+
+Create 3 K8S Master Nodes and 3 K8S Worker Nodes by GUI or CLI on OpenStack
+Cloud, with following name:
+
+```log
+k8s-cls-1-master-1
+k8s-cls-1-master-2
+k8s-cls-1-master-3
+
+k8s-cls-1-worker-1
+k8s-cls-1-worker-2
+k8s-cls-1-worker-3
+```
+
+After VMs are created, update ansible inventory file with IP of Created VMs
+
+Setup docker and prepare presequite on K8S VMs. Run this
+ansible playbook command on bastion node
+
+```bash
+ansible-playbook -i inventory.ini site.yml \
+    -e ansible_ssh_user=centos --key-file "/path_to_vm_key" \
+    --tags "ensure_k8s_presequite"
+```
+
+SSH to each node, ensure node hostname is the same with
+OpenStack Instance Name by run command:
+
+```bash
+# On node k8s-cls-1-master-1
+hostnamectl set-hostname k8s-cls-1-master-1
+# On node k8s-cls-1-master-2
+hostnamectl set-hostname k8s-cls-1-master-2
+# On node k8s-cls-1-master-3
+hostnamectl set-hostname k8s-cls-1-master-3
+
+# On node k8s-cls-1-worker-1
+hostnamectl set-hostname k8s-cls-1-worker-1
+# On node k8s-cls-1-worker-2
+hostnamectl set-hostname k8s-cls-1-worker-2
+# On node k8s-cls-1-worker-3
+hostnamectl set-hostname k8s-cls-1-worker-3
+
+```
+
+This setup is ensure openstack cloud controller manager can recognize k8s node
+via OpenStack API.
 
 ### Setup firewall rules
 
@@ -77,7 +127,6 @@ Create LB
 
 ```bash
 openstack loadbalancer create --name k8s-api-lb --vip-address 10.240.230.50
-
 ```
 
 Create Listener
@@ -85,7 +134,6 @@ Create Listener
 ```bash
 openstack loadbalancer listener create --protocol TCP --protocol-port 2379 --name k8s-etcd-listener  <LB_ID>
 openstack loadbalancer listener create --protocol TCP --protocol-port 6443 --name k8s-api-listener  <LB_ID>
-
 ```
 
 Create LB Pool and Pool Health Monitor
@@ -95,7 +143,6 @@ openstack loadbalancer pool create --name k8s-etcd-pool --listener <k8s-etcd-lis
 openstack loadbalancer pool create --name k8s-api-pool --listener <k8s-api-listener-id> --protocol TCP --lb-algorithm ROUND_ROBIN
 openstack loadbalancer healthmonitor create --delay 5 --max-retries 4 --timeout 10 --type TCP k8s-etcd-pool
 openstack loadbalancer healthmonitor create --delay 5 --max-retries 4 --timeout 10 --type TCP k8s-api-pool
-
 ```
 
 Create Pool Member
@@ -135,61 +182,6 @@ openstack loadbalancer member create \
 
 ### Setup K8S Masters
 
-Create three K8S Master VMs: `10.240.0.11, 10.240.0.12, 10.240.0.13`
-
-```bash
-gcloud compute instances create k8s-controller-1 \
-    --async \
-    --boot-disk-size 40GB \
-    --boot-disk-type pd-ssd \
-    --can-ip-forward \
-    --image-family centos-7 \
-    --image-project centos-cloud \
-    --machine-type e2-medium \
-    --no-address \
-    --private-network-ip 10.240.0.11 \
-    --scopes compute-rw,storage-ro,service-management,service-control,logging-write,monitoring \
-    --subnet k8s-subnet \
-    --zone asia-southeast1-b \
-    --tags k8s-cluster,controller,etcd
-
-gcloud compute instances create k8s-controller-2 \
-    --async \
-    --boot-disk-size 40GB \
-    --boot-disk-type pd-ssd \
-    --can-ip-forward \
-    --image-family centos-7 \
-    --image-project centos-cloud \
-    --machine-type e2-medium \
-    --private-network-ip 10.240.0.12 \
-    --no-address \
-    --scopes compute-rw,storage-ro,service-management,service-control,logging-write,monitoring \
-    --subnet k8s-subnet \
-    --zone asia-southeast1-b \
-    --tags k8s-cluster,controller,etcd
-
-gcloud compute instances create k8s-controller-3 \
-    --async \
-    --boot-disk-size 40GB \
-    --boot-disk-type pd-ssd \
-    --can-ip-forward \
-    --image-family centos-7 \
-    --image-project centos-cloud \
-    --machine-type e2-medium \
-    --private-network-ip 10.240.0.13 \
-    --no-address \
-    --scopes compute-rw,storage-ro,service-management,service-control,logging-write,monitoring \
-    --subnet k8s-subnet \
-    --zone asia-southeast1-b \
-    --tags k8s-cluster,controller,etcd
-```
-
-Setup docker and prepare presequite on 3 K8S Master VMs
-
-```bash
-ansible-playbook -i inventory.ini site.yml -e ansible_ssh_user=centos --key-file "/PATH_TO_GOOGLE_CLOUD_VM_KEY" --tags "ensure_k8s_presequite"
-```
-
 #### Setup etcd cluster
 
 Init etcd cluster in `k8s-controller-1` by run following commands
@@ -226,9 +218,8 @@ ETCDCTL_API=3 etcdadm join --version 3.4.13 https://10.240.0.11:2379
 
 #### Setup k8s-controller-1 k8s controller components
 
-use root user, create`kubeadm-config.yml` file with token is generated from command `kubeadm token generate`
-
-Create config file `kubeadm-config.yml` on k8s-controller-1
+Create config file `kubeadm-config.yml` on k8s-controller-1 with sample from
+`kubeadm-config-example.yml` file
 
 Init k8s master:
 
@@ -242,6 +233,21 @@ mkdir -p $HOME/.kube
   sudo chown $(id -u):$(id -g) $HOME/.kube/config
 ```
 
+Create cloud-config file from sample file `cloud.conf`
+Create `cloud-config` secret in kubernetes secret:
+
+```bash
+kubectl create secret -n kube-system generic cloud-config --from-file=cloud.conf
+```
+
+Create RBAC resources and openstack-cloud-controller-manager deamonset
+
+```bash
+kubectl apply -f cloud-controller-manager-roles.yaml
+kubectl apply -f cloud-controller-manager-role-bindings.yaml
+kubectl apply -f openstack-cloud-controller-manager-ds.yaml
+```
+
 Create `calico.yml` manifest file for calico CNI
 
 Apply calico CNI:
@@ -253,26 +259,24 @@ kubectl apply -f calico.yml
 Copy k8s master certificates to `k8s-controller-2` and `k8s-controller-3`:
 
 ```bash
-scp  -i /PATH_TO_GOOGLE_CLOUD_VM_KEY /etc/kubernetes/pki/ca.crt centos@10.240.0.12:/home/centos
-scp  -i /PATH_TO_GOOGLE_CLOUD_VM_KEY /etc/kubernetes/pki/ca.key centos@10.240.0.12:/home/centos
-scp  -i /PATH_TO_GOOGLE_CLOUD_VM_KEY /etc/kubernetes/pki/sa.key centos@10.240.0.12:/home/centos
-scp  -i /PATH_TO_GOOGLE_CLOUD_VM_KEY /etc/kubernetes/pki/sa.pub centos@10.240.0.12:/home/centos
-scp  -i /PATH_TO_GOOGLE_CLOUD_VM_KEY /etc/kubernetes/pki/front-proxy-ca.crt centos@10.240.0.12:/home/centos
-scp  -i /PATH_TO_GOOGLE_CLOUD_VM_KEY /etc/kubernetes/pki/front-proxy-ca.key centos@10.240.0.12:/home/centos
+scp  -i /path_to_ssh_key_file /etc/kubernetes/pki/ca.crt centos@K8S_MASTER_2_IP:/home/centos
+scp  -i /path_to_ssh_key_file /etc/kubernetes/pki/ca.key centos@K8S_MASTER_2_IP:/home/centos
+scp  -i /path_to_ssh_key_file /etc/kubernetes/pki/sa.key centos@K8S_MASTER_2_IP:/home/centos
+scp  -i /path_to_ssh_key_file /etc/kubernetes/pki/sa.pub centos@K8S_MASTER_2_IP:/home/centos
+scp  -i /path_to_ssh_key_file /etc/kubernetes/pki/front-proxy-ca.crt centos@K8S_MASTER_2_IP:/home/centos
+scp  -i /path_to_ssh_key_file /etc/kubernetes/pki/front-proxy-ca.key centos@K8S_MASTER_2_IP:/home/centos
 
-scp  -i /PATH_TO_GOOGLE_CLOUD_VM_KEY /etc/kubernetes/pki/ca.crt centos@10.240.0.13:/home/centos
-scp  -i /PATH_TO_GOOGLE_CLOUD_VM_KEY /etc/kubernetes/pki/ca.key centos@10.240.0.13:/home/centos
-scp  -i /PATH_TO_GOOGLE_CLOUD_VM_KEY /etc/kubernetes/pki/sa.key centos@10.240.0.13:/home/centos
-scp  -i /PATH_TO_GOOGLE_CLOUD_VM_KEY /etc/kubernetes/pki/sa.pub centos@10.240.0.13:/home/centos
-scp  -i /PATH_TO_GOOGLE_CLOUD_VM_KEY /etc/kubernetes/pki/front-proxy-ca.crt centos@10.240.0.13:/home/centos
-scp  -i /PATH_TO_GOOGLE_CLOUD_VM_KEY /etc/kubernetes/pki/front-proxy-ca.key centos@10.240.0.13:/home/centos
-
+scp  -i /path_to_ssh_key_file /etc/kubernetes/pki/ca.crt centos@K8S_MASTER_3_IP:/home/centos
+scp  -i /path_to_ssh_key_file /etc/kubernetes/pki/ca.key centos@K8S_MASTER_3_IP:/home/centos
+scp  -i /path_to_ssh_key_file /etc/kubernetes/pki/sa.key centos@K8S_MASTER_3_IP:/home/centos
+scp  -i /path_to_ssh_key_file /etc/kubernetes/pki/sa.pub centos@K8S_MASTER_3_IP:/home/centos
+scp  -i /path_to_ssh_key_file /etc/kubernetes/pki/front-proxy-ca.crt centos@K8S_MASTER_3_IP:/home/centos
+scp  -i /path_to_ssh_key_file /etc/kubernetes/pki/front-proxy-ca.key centos@K8S_MASTER_3_IP:/home/centos
 ```
 
 #### Setup k8s-controller-2 and k8s-controller-3
 
 ```bash
-
 USER=centos # customizable
 mkdir -p /etc/kubernetes/pki/etcd
 mv /home/${USER}/ca.crt /etc/kubernetes/pki/
@@ -285,77 +289,140 @@ mv /home/${USER}/front-proxy-ca.key /etc/kubernetes/pki/
 
 Perform join k8s control plane:
 
-```log
-kubeadm join 10.240.0.6:6443 --token KUBE_CLUSTER_TOKEN --discovery-token-ca-cert-hash sha256:KUBE_CLUSTER_CA_CERT_HASH --control-plane
+Create join config file with following sample format
+
+```yaml
+apiVersion: kubeadm.k8s.io/v1beta2
+discovery:
+  bootstrapToken:
+    apiServerEndpoint: 10.240.230.50:6443
+    token: JOIN_TOKEN
+    caCertHashes: ["CA_CERT_HASH"]
+kind: JoinConfiguration
+nodeRegistration:
+  kubeletExtraArgs:
+    cloud-provider: "external"
+controlPlane:
+  localAPIEndpoint:
+    advertiseAddress: K8S_MASTER_2_OR_3_IP_ADDRESS
 ```
 
-After join successful, add k8s-master-2 and k8s-master-3 to master
-instance group:
+Run join command
 
 ```bash
-gcloud compute instance-groups unmanaged add-instances k8s-master-group \
-    --zone=asia-southeast1-b \
-    --instances=k8s-controller-2,k8s-controller-3
+kubeadm join --config kubeadm-config.yml
 ```
 
 ### Setup K8S Workers
 
-Create three K8S Master VMs: `10.240.0.21, 10.240.0.22, 10.240.0.23`
-
-```bash
-gcloud compute instances create k8s-worker-1 \
-    --async \
-    --boot-disk-size 40GB \
-    --can-ip-forward \
-    --image-family centos-7 \
-    --image-project centos-cloud \
-    --machine-type e2-medium \
-    --no-address \
-    --private-network-ip 10.240.0.21 \
-    --scopes compute-rw,storage-ro,service-management,service-control,logging-write,monitoring \
-    --subnet k8s-subnet \
-    --zone asia-southeast1-b \
-    --tags k8s-cluster,worker
-
-gcloud compute instances create k8s-worker-2 \
-    --async \
-    --boot-disk-size 40GB \
-    --can-ip-forward \
-    --image-family centos-7 \
-    --image-project centos-cloud \
-    --machine-type e2-medium \
-    --private-network-ip 10.240.0.22 \
-    --no-address \
-    --scopes compute-rw,storage-ro,service-management,service-control,logging-write,monitoring \
-    --subnet k8s-subnet \
-    --zone asia-southeast1-b \
-    --tags k8s-cluster,worker
-
-gcloud compute instances create k8s-worker-3 \
-    --async \
-    --boot-disk-size 40GB \
-    --can-ip-forward \
-    --image-family centos-7 \
-    --image-project centos-cloud \
-    --machine-type e2-medium \
-    --private-network-ip 10.240.0.23 \
-    --no-address \
-    --scopes compute-rw,storage-ro,service-management,service-control,logging-write,monitoring \
-    --subnet k8s-subnet \
-    --zone asia-southeast1-b \
-    --tags k8s-cluster,worker
-```
-
-Setup docker and prepare presequite on 3 K8S Master VMs
-
-```bash
-ansible-playbook -i inventory.ini site.yml -e ansible_ssh_user=centos --key-file "/PATH_TO_GOOGLE_CLOUD_VM_KEY" --tags "ensure_k8s_presequite"
-```
-
 Perform join k8s worker in each k8s-worker node by run this command with root user:
 
 ```log
-kubeadm join 10.240.0.6:6443 --token KUBE_CLUSTER_TOKEN --discovery-token-ca-cert-hash sha256:KUBE_CLUSTER_CA_CERT_HASH
+apiVersion: kubeadm.k8s.io/v1beta2
+discovery:
+  bootstrapToken:
+    apiServerEndpoint: 10.240.230.50:6443
+    token: JOIN_TOKEN
+    caCertHashes: ["CA_CERT_HASH"]
+kind: JoinConfiguration
+nodeRegistration:
+  kubeletExtraArgs:
+    cloud-provider: "external"
+```
+
+Run join command
+
+```bash
+kubeadm join --config kubeadm-config.yml
+```
+
+## Test Cluster After Setup Done
+
+Create a k8s nginx pod:
+
+```yaml
+# nginx.yaml file content
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  labels:
+   app: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.17.3-alpine
+    ports:
+    - containerPort: 80
+```
+
+```bash
+kubectl apply -f nginx.yaml
+```
+
+Create a nginx LoadBalancer Service:
+
+```yaml
+# nginx-service.yaml file content
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginxservice
+  labels:
+    app: nginx
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: nginx
+  type: LoadBalancer
+```
+
+```bash
+kubectl apply -f nginx-service.yaml
+```
+
+Verify K8S Service is created
+
+```bash
+kubectl get services
+NAME           TYPE           CLUSTER-IP        EXTERNAL-IP    PORT(S)        AGE
+kubernetes     ClusterIP      192.168.128.1     <none>         443/TCP        11h
+nginxservice   LoadBalancer   192.168.213.173   38.108.68.29   80:32279/TCP   10m
+```
+
+Try access service:
+
+```bash
+curl -L http://38.108.68.29:80
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+    body {
+        width: 35em;
+        margin: 0 auto;
+        font-family: Tahoma, Verdana, Arial, sans-serif;
+    }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href="http://nginx.com/">nginx.com</a>.</p>
+
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
 ```
 
 ## References

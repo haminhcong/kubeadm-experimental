@@ -1,0 +1,13 @@
+apiVersion: kubeadm.k8s.io/v1beta2
+discovery:
+  bootstrapToken:
+    apiServerEndpoint: 10.240.230.50:6443
+    token: JOIN_TOKEN
+    caCertHashes: ["CA_CERT_HASH"]
+kind: JoinConfiguration
+nodeRegistration:
+  kubeletExtraArgs:
+    cloud-provider: "external"
+controlPlane:
+  localAPIEndpoint:
+    advertiseAddress: K8S_MASTER_2_OR_3_IP_ADDRESS

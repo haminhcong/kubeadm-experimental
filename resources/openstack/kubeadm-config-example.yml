@@ -1,0 +1,40 @@
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: 10.240.230.50
+  bindPort: 6443
+nodeRegistration:
+  kubeletExtraArgs:
+    cloud-provider: "external"
+  name:
+  taints:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+---
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: ClusterConfiguration
+apiServer:
+  timeoutForControlPlane: 4m0s
+  extraArgs:
+    cloud-provider: "external"
+controllerManager:
+  extraArgs:
+    cloud-provider: "external"
+certificatesDir: /etc/kubernetes/pki
+controlPlaneEndpoint: "10.240.230.50:6443"
+clusterName: cluster1
+etcd:
+  external:
+    endpoints:
+    - https://K8S_MASTER_1_IP:2379
+    - https://K8S_MASTER_2_IP:2379
+    - https://K8S_MASTER_3_IP:2379
+    caFile: /etc/etcd/pki/ca.crt
+    certFile: /etc/etcd/pki/apiserver-etcd-client.crt
+    keyFile: /etc/etcd/pki/apiserver-etcd-client.key
+kubernetesVersion: v1.19.1
+networking:
+  dnsDomain: cluster.local
+  serviceSubnet: 192.168.128.0/17
+  podSubnet: 192.168.0.0/17
+scheduler: {}
