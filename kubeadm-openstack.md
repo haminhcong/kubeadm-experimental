@@ -1,4 +1,4 @@
-# kubeadm-gcp-experimental
+# kubeadm-openstack-vexxhost-experimental
 
 Experimental to deploy k8s cluster on OpenStack Cloud Provider - VEXXHOST,
 with etcdadm, kubeadm and calico
