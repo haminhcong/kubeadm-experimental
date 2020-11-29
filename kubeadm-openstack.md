@@ -677,3 +677,5 @@ kubectl uncordon k8s-cls-1-worker-1
 
 - <https://github.com/kubernetes/cloud-provider-openstack/blob/master/docs/openstack-cloud-controller-manager/using-openstack-cloud-controller-manager.md>
 - <https://github.com/kubernetes-sigs/etcdadm>
+- <https://github.com/kubernetes/cloud-provider-openstack/blob/master/docs/cinder-csi-plugin/using-cinder-csi-plugin.md>
+- <https://dev.to/ingoleajinkya/kubernetes-storage-using-ceph-4lbp>
