@@ -1,4 +1,4 @@
-# Kubeadm Experimental
+# No futher development - documented - content moved to https://github.com/haminhcong/k8s-til
 
 Some notes about kubeadm:
 
